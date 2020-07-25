@@ -258,7 +258,38 @@ UsersRoute.get('/user/by-type', validateToken, async (req, res, next) => {
     let response = {};
     try {
         if (userTypeId) {
-            const userResponse = await users.query().where('user_type_id', userTypeId).andWhere('is_deleted', false).eager('[usersType, location]');
+            const userResponse = await users.query()
+            .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
+            .leftJoin('locations', 'locations.id', 'users.location_id')
+            .where('user_type_id', userTypeId).andWhere('is_deleted', false)
+            .select(
+                'users.about',
+                'users.avatar_uri',
+                'users.bownerid',
+                'users.created_at',
+                'users.dob',
+                'users.email',
+                'users.facility_code',
+                'users.first_name',
+                'users.last_name',
+                'users.id',
+                'users.is_deleted',
+                'users.last_login_date',
+                'locations.address1',
+                'locations.address2',
+                'locations.city',
+                'locations.lat',
+                'locations.long',
+                'locations.state',
+                'locations.zipcode',
+                'users.location_id',
+                'users.phone',
+                'users.salutation',
+                'users.sex',
+                'users.user_type_id',
+                'user_type.type',
+                'users.credentials'
+            );
             response = userResponse;
         }
         res.send({
