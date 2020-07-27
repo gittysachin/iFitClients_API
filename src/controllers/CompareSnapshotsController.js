@@ -25,52 +25,33 @@ const isColumnValueUndefined = (columnName, dataType) => {
     return _columnValue;
 }
 
-// CompareSnapsRoute.post('/', validateToken, async (req, res, next) => {
-//     try {
-//         let requestParams = {
-//             pageNo: req.body.pageNo,
-//             pageSize: req.body.pageSize,
-//             user_id: req.body.user_id
-//         }
-//         console.log(`Getting request params for get all snapsots is ${JSON.stringify(requestParams, null, 2)}`);
-//         const s = await Snapshots.query()            
-//             .andWhere('user_id', requestParams.user_id)
-//             .andWhere('is_active', true)
-//             .orderBy('created_at', 'desc')
-//             .page(requestParams.pageNo - 1, requestParams.pageSize);
-//         console.log(`Getting Snapshots details like ${JSON.stringify(s, null, 2)}`);
-//         res.send({
-//             res: s
-//         });
-//     } catch (error) {
-//         console.log(`Snapshots: Error while getting all Snapshots with details : ${JSON.stringify(error, null, 2)}`);
-//         res.send(
-//             JSON.stringify({
-//                 message: error.message,
-//                 stack: error.stack
-//             })
-//         );
-//     }
-// })
-
-// CompareSnapsRoute.get('/:id', validateToken, async (req, res, next) => {
-//     let snapshot_id = req.params.id;
-//     try {
-//         const w = await Snapshots.query().where('id', snapshot_id).first();
-//         console.log(`Getting Snapshots by id details like ${JSON.stringify(w, null, 2)}`);
-//         res.send({
-//             res: w
-//         });
-//     } catch (error) {
-//         console.log(`Snapshots: Error while getting Snapshots by id with details : ${JSON.stringify(error, null, 2)}`);
-//         res.send(
-//             JSON.stringify({
-//                 message: error.message,
-//                 stack: error.stack
-//             })
-//         );
-//     }
-// });
+CompareSnapsRoute.post('/', validateToken, async (req, res, next) => {
+    try {
+        let requestParams = {
+            pageNo: req.body.pageNo,
+            pageSize: req.body.pageSize,
+            user_id: req.body.user_id
+        }
+        console.log(`Getting request params for get all snapsots is ${JSON.stringify(requestParams, null, 2)}`);
+        const s = await CompareSnaps.query()            
+            .andWhere('user_id', requestParams.user_id)
+            .andWhere('is_active', true)
+            .orderBy('created_at', 'desc')
+            .page(requestParams.pageNo - 1, requestParams.pageSize);
+        console.log(`Getting Snapshots details like ${JSON.stringify(s, null, 2)}`);
+        res.send({
+            res: s
+        });
+    } catch (error) {
+        console.log(`Snapshots: Error while getting all Snapshots with details : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+})
 
 CompareSnapsRoute.post('/save', validateToken, async (req, res, next) => {   
     try {
