@@ -2,8 +2,6 @@ const express = require('express');
 const SnapshotRoute = express.Router();
 const Snapshots = require('../models/snapshots').default;
 const validateToken = require('../middleware').default;
-const users = require('../models/users').default;
-const UserTypes = require('../enums/user-types').default;
 const multer = require('multer');
 const path = require('path');
 const jwt = require('jsonwebtoken');
@@ -46,83 +44,24 @@ const isColumnValueUndefined = (columnName, dataType) => {
 }
 
 SnapshotRoute.post('/', validateToken, async (req, res, next) => {
-    if (!req.headers.authorization) {
-        next();
-    }
-    try {
-        let requestParams = {
-            pageNo: req.body.pageNo,
-            pageSize: req.body.pageSize
-        }
-        console.log(`Getting request params for get all wotkouts is ${JSON.stringify(requestParams, null, 2)}`);
-        const token = req.headers.authorization.split(' ')[1];
-        const decodedToken = jwt.decode(token);
-        const u = await users.query()
-            .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
-            .where('users.is_deleted', false)
-            .andWhere('users.id', decodedToken.userid)
-            .select(
-                'users.id',
-                'users.bownerid',
-                'users.user_type_id'
-            ).first();
-        console.log(`Getting user details from token is ${JSON.stringify(u, null, 2)}`)
-        let w;
-        if (u && u.user_type_id === UserTypes.SUPERADMIN) {
-            w = await workouts.query()
-                .andWhere('is_active', true)
-                .orderBy('created_at', 'desc')
-                .page(requestParams.pageNo - 1, requestParams.pageSize);
-            console.log(`Getting workout details like ${JSON.stringify(w, null, 2)}`);
-        } else if (u && u.user_type_id === UserTypes.ADMIN) {
-            w = await workouts.query()
-                .where('business_owner_id', u.bownerid)
-                .andWhere('is_active', true)
-                .orderBy('created_at', 'desc')
-                .page(requestParams.pageNo - 1, requestParams.pageSize);
-            console.log(`Getting workout details like ${JSON.stringify(w, null, 2)}`);
-        } else if (u && u.user_type_id === UserTypes.CLIENT) {
-            w = await workouts.query()
-                .where('business_owner_id', u.bownerid)
-                .andWhere('category_id', requestParams.category_id)
-                .andWhere('is_active', true)
-                .orderBy('created_at', 'desc')
-                .page(requestParams.pageNo - 1, requestParams.pageSize);
-            console.log(`Getting workout details like ${JSON.stringify(w, null, 2)}`);
-        }
-        res.send({
-            res: w
-        });
-    } catch (error) {
-        console.log(`Workouts: Error while getting all workouts with details : ${JSON.stringify(error, null, 2)}`);
-        res.send(
-            JSON.stringify({
-                message: error.message,
-                stack: error.stack
-            })
-        );
-    }
-})
-
-
-SnapshotRoute.post('/get-workout/by/business-owner-id', validateToken, async (req, res, next) => {
     try {
         let requestParams = {
             pageNo: req.body.pageNo,
             pageSize: req.body.pageSize,
-            business_owner_id: req.body.business_owner_id
+            user_id: req.body.user_id
         }
-        const w = await workouts.query()
-            .where('business_owner_id', requestParams.business_owner_id)
+        console.log(`Getting request params for get all snapsots is ${JSON.stringify(requestParams, null, 2)}`);
+        const s = await Snapshots.query()            
+            .andWhere('user_id', requestParams.user_id)
             .andWhere('is_active', true)
             .orderBy('created_at', 'desc')
             .page(requestParams.pageNo - 1, requestParams.pageSize);
-        console.log(`Getting workout by business owner id like ${JSON.stringify(w, null, 2)}`);
+        console.log(`Getting Snapshots details like ${JSON.stringify(s, null, 2)}`);
         res.send({
-            res: w
+            res: s
         });
     } catch (error) {
-        console.log(`Workouts: Error while getting workouts by business owner with details : ${JSON.stringify(error, null, 2)}`);
+        console.log(`Snapshots: Error while getting all Snapshots with details : ${JSON.stringify(error, null, 2)}`);
         res.send(
             JSON.stringify({
                 message: error.message,
@@ -133,15 +72,15 @@ SnapshotRoute.post('/get-workout/by/business-owner-id', validateToken, async (re
 })
 
 SnapshotRoute.get('/:id', validateToken, async (req, res, next) => {
-    let workout_id = req.params.id;
+    let snapshot_id = req.params.id;
     try {
-        const w = await workouts.query().where('id', workout_id).first();
-        console.log(`Getting workout by id details like ${JSON.stringify(w, null, 2)}`);
+        const w = await Snapshots.query().where('id', snapshot_id).first();
+        console.log(`Getting Snapshots by id details like ${JSON.stringify(w, null, 2)}`);
         res.send({
             res: w
         });
     } catch (error) {
-        console.log(`Workouts: Error while getting workout by id with details : ${JSON.stringify(error, null, 2)}`);
+        console.log(`Snapshots: Error while getting Snapshots by id with details : ${JSON.stringify(error, null, 2)}`);
         res.send(
             JSON.stringify({
                 message: error.message,
@@ -160,20 +99,19 @@ SnapshotRoute.post('/save', upload, validateToken, async (req, res, next) => {
     }
     try {
         let obj = {
-            business_owner_id: isColumnValueUndefined(req.body.business_owner_id, 'string'),
-            category_id: isColumnValueUndefined(req.body.category_id, 'string'),
+            user_id: isColumnValueUndefined(req.body.user_id, 'string'),
+            snapshot_date: req.body.snapshot_date ? req.body.snapshot_date : new Date(),
             url: imagePath,
-            name: isColumnValueUndefined(req.body.name, 'string'),
-            description: isColumnValueUndefined(req.body.description, 'string'),
+            pose: isColumnValueUndefined(req.body.pose, 'string')
         }
-        console.log(`Getting workout params for save with  details like ${JSON.stringify(obj, null, 2)}`);
-        const w = await workouts.query().insertGraphAndFetch(obj);
-        console.log(`Workout after save is ${JSON.stringify(w, null, 2)}`);
+        console.log(`Getting snapshot params for save with  details like ${JSON.stringify(obj, null, 2)}`);
+        const s = await Snapshots.query().insertGraphAndFetch(obj);
+        console.log(`Snapshots after save is ${JSON.stringify(s, null, 2)}`);
         res.send({
-            res: w
+            res: s
         });
     } catch (error) {
-        console.log(`Workouts: Error while saving workout with details : ${JSON.stringify(error, null, 2)}`);
+        console.log(`Snapshots: Error while saving snapshots with details : ${JSON.stringify(error.stack, null, 2)}`);
         res.send(
             JSON.stringify({
                 message: error.message,
@@ -193,21 +131,20 @@ SnapshotRoute.put('/', upload, validateToken, async (req, res, next) => {
     }
     try {
         let obj = {
-            id: isColumnValueUndefined(req.body.id, "string"),
-            business_owner_id: isColumnValueUndefined(req.body.business_owner_id, 'string'),
-            category_id: isColumnValueUndefined(req.body.category_id, 'string'),
+            id: isColumnValueUndefined(req.body.id, 'string'),
+            user_id: isColumnValueUndefined(req.body.user_id, 'string'),
+            snapshot_date: req.body.snapshot_date ? req.body.snapshot_date : new Date(),
             url: imagePath,
-            name: isColumnValueUndefined(req.body.name, 'string'),
-            description: isColumnValueUndefined(req.body.description, 'string')
+            pose: isColumnValueUndefined(req.body.pose, 'string')
         }
-        console.log(`Getting workout params for update with  details like ${JSON.stringify(obj, null, 2)}`);
-        const w = await workouts.query().upsertGraphAndFetch(obj, { relate: true, unrelate: true });
-        console.log(`Workout after update is ${JSON.stringify(w, null, 2)}`);
+        console.log(`Getting Snapshots params for update with  details like ${JSON.stringify(obj, null, 2)}`);
+        const s = await Snapshots.query().upsertGraphAndFetch(obj, { relate: true, unrelate: true });
+        console.log(`Snapshots after update is ${JSON.stringify(s, null, 2)}`);
         res.send({
-            res: w
+            res: s
         });
     } catch (error) {
-        console.log(`Workouts: Error while updating workout with details : ${JSON.stringify(error, null, 2)}`);
+        console.log(`Snapshots: Error while updating Snapshots with details : ${JSON.stringify(error, null, 2)}`);
         res.send(
             JSON.stringify({
                 message: error.message,

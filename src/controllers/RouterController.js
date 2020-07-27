@@ -8,6 +8,7 @@ const Categories = require('./CategoriesController').default;
 const Workout = require('./workoutController').default;
 const Nutrition = require('./NutritionController').default;
 const Goals = require('./GoalsController').default;
+const Snapshots = require('./SnapshotController').default;
 
 index.use(async (req, res, next) => {
   next();
@@ -28,6 +29,7 @@ const router = (app => {
   app.use('/workout', Workout);
   app.use('/nutrition', Nutrition);
   app.use('/goals', Goals);
+  app.use('/snapshots', Snapshots);
 })
 
 export default router;
