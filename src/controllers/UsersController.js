@@ -158,14 +158,14 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
         imagePath = req.body.avatar_uri;
     }
     let userObj = {
-        id: isColumnValueUndefined(req.body.id, "string"),
+        id: isColumnValueUndefined(req.body.UserId, "string"),
         user_type_id: isColumnValueUndefined(req.body.user_type_id, "string"),
         first_name: isColumnValueUndefined(req.body.first_name, "string"),
             last_name: isColumnValueUndefined(req.body.last_name, "string"),
             avatar_uri: imagePath,
             phone: isColumnValueUndefined(req.body.phone, "string"),
             email: isColumnValueUndefined(req.body.email, "string"),
-            slutation: isColumnValueUndefined(req.body.salutation, "string"),
+            salutation: isColumnValueUndefined(req.body.salutation, "string"),
             credentials: isColumnValueUndefined(req.body.credentials, "string"),
             dob: isColumnValueUndefined(req.body.dob, "string"),
             about: isColumnValueUndefined(req.body.about, "string"),
@@ -186,7 +186,7 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
         // res.send({
         //     res: userUpdateRes
         // });
-        console.log(req.body)
+        console.log(userObj)
         if (!req.body.UserId) {
             const isUserExits = await users
               .query()
@@ -207,13 +207,12 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
           } else {
             const isUserExits = await users
               .query()
-              .where('id', req.body.UserId)
+              .where('email', req.body.email)
               .first();
             if (isUserExits) {
               const response = await users
                 .query()
-                .findById(req.body.UserId)
-                .update(userObj, { relate: true, unrelate: true });
+                .upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
               res.send({
                 res: response
               });
