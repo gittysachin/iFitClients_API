@@ -157,16 +157,15 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
     } else {
         imagePath = req.body.avatar_uri;
     }
-    try {
-        let userObj = {
-            id: isColumnValueUndefined(req.body.id, "string"),
-            user_type_id: isColumnValueUndefined(req.body.user_type_id, "string"),
-            first_name: isColumnValueUndefined(req.body.first_name, "string"),
+    let userObj = {
+        id: isColumnValueUndefined(req.body.id, "string"),
+        user_type_id: isColumnValueUndefined(req.body.user_type_id, "string"),
+        first_name: isColumnValueUndefined(req.body.first_name, "string"),
             last_name: isColumnValueUndefined(req.body.last_name, "string"),
             avatar_uri: imagePath,
             phone: isColumnValueUndefined(req.body.phone, "string"),
             email: isColumnValueUndefined(req.body.email, "string"),
-            salutation: isColumnValueUndefined(req.body.salutation, "string"),
+            slutation: isColumnValueUndefined(req.body.salutation, "string"),
             credentials: isColumnValueUndefined(req.body.credentials, "string"),
             dob: isColumnValueUndefined(req.body.dob, "string"),
             about: isColumnValueUndefined(req.body.about, "string"),
@@ -182,10 +181,48 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
             },
             facility_code: isColumnValueUndefined(req.body.facility_code, "string"),
         }
-        let userUpdateRes = await users.query().upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
-        res.send({
-            res: userUpdateRes
-        });
+    try {
+        // let userUpdateRes = await users.query().upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
+        // res.send({
+        //     res: userUpdateRes
+        // });
+        console.log(req.body)
+        if (!req.body.UserId) {
+            const isUserExits = await users
+              .query()
+              .where('email', req.body.email)
+              .first();
+            if (!isUserExits) {
+              const response = await users
+                .query()
+                .insertGraphAndFetch(userObj, { relate: true, unrelate: true });
+              res.send({
+                res: response
+              });
+            } else {
+              res.send({
+                message: 'This user is already exist!'
+              });
+            }
+          } else {
+            const isUserExits = await users
+              .query()
+              .where('id', req.body.UserId)
+              .first();
+            if (isUserExits) {
+              const response = await users
+                .query()
+                .findById(req.body.UserId)
+                .update(userObj, { relate: true, unrelate: true });
+              res.send({
+                res: response
+              });
+            } else {
+              res.send({
+                message: 'User does not exist with the provided UserId'
+              });
+            }
+          }
     } catch (error) {
         console.log(`Users: Error while updating user with details : ${JSON.stringify(error, null, 2)}`);
         res.send(
@@ -226,7 +263,6 @@ UsersRoute.post('/', upload, validateToken, async (req, res, next) => {
         facility_code: isColumnValueUndefined(req.body.facility_code, "string"),
     }
     try {
-        console.log(userObj)
         const isUserExits = await users.query().skipUndefined().where('email', req.body.email).first();
         if (!isUserExits) {
             const bo = await bOwners.query().skipUndefined().where('facility_code', req.body.facility_code).first();
