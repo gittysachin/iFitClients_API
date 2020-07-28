@@ -226,9 +226,10 @@ UsersRoute.post('/', upload, validateToken, async (req, res, next) => {
         facility_code: isColumnValueUndefined(req.body.facility_code, "string"),
     }
     try {
-        const isUserExits = await users.query().where('email', req.body.email).first();
+        console.log(userObj)
+        const isUserExits = await users.query().skipUndefined().where('email', req.body.email).first();
         if (!isUserExits) {
-            const bo = await bOwners.query().where('facility_code', req.body.facility_code).first();
+            const bo = await bOwners.query().skipUndefined().where('facility_code', req.body.facility_code).first();
             if (bo) {
                 userObj.bownerid = bo.id;
             }
