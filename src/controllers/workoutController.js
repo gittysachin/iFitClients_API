@@ -133,6 +133,24 @@ WorkoutRoute.post('/get-workout/by/business-owner-id', validateToken, async (req
     }
 })
 
+WorkoutRoute.get('/', validateToken, async (req, res, next) => {
+    try {
+        const w = await workouts.query();
+        console.log(`Getting workout by id details like ${JSON.stringify(w, null, 2)}`);
+        res.send({
+            res: w
+        });
+    } catch (error) {
+        console.log(`Workouts: Error while getting workout with details : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+});
+
 WorkoutRoute.get('/:id', validateToken, async (req, res, next) => {
     let workout_id = req.params.id;
     try {
