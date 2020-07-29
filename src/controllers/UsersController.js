@@ -161,26 +161,27 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
         id: isColumnValueUndefined(req.body.UserId, "string"),
         user_type_id: isColumnValueUndefined(req.body.user_type_id, "string"),
         first_name: isColumnValueUndefined(req.body.first_name, "string"),
-            last_name: isColumnValueUndefined(req.body.last_name, "string"),
-            avatar_uri: imagePath,
-            phone: isColumnValueUndefined(req.body.phone, "string"),
-            email: isColumnValueUndefined(req.body.email, "string"),
-            salutation: isColumnValueUndefined(req.body.salutation, "string"),
-            credentials: isColumnValueUndefined(req.body.credentials, "string"),
-            dob: isColumnValueUndefined(req.body.dob, "string"),
-            about: isColumnValueUndefined(req.body.about, "string"),
-            sex: isColumnValueUndefined(req.body.sex, "string"),
-            location: {
-                name: 'User Address',
-                type: 'Home',
-                address1: isColumnValueUndefined(req.body.address1, "string"),
-                address2: isColumnValueUndefined(req.body.address2, "string"),
-                city: isColumnValueUndefined(req.body.city, "string"),
-                state: isColumnValueUndefined(req.body.state, "string"),
-                zipcode: isColumnValueUndefined(req.body.zipcode, "string"),
-            },
-            facility_code: isColumnValueUndefined(req.body.facility_code, "string"),
-        }
+        last_name: isColumnValueUndefined(req.body.last_name, "string"),
+        avatar_uri: imagePath,
+        phone: isColumnValueUndefined(req.body.phone, "string"),
+        email: isColumnValueUndefined(req.body.email, "string"),
+        salutation: isColumnValueUndefined(req.body.salutation, "string"),
+        credentials: isColumnValueUndefined(req.body.credentials, "string"),
+        dob: isColumnValueUndefined(req.body.dob, "string"),
+        about: isColumnValueUndefined(req.body.about, "string"),
+        sex: isColumnValueUndefined(req.body.sex, "string"),
+        bownerid: isColumnValueUndefined(req.body.bownerid, "string"),
+        location: {
+            name: 'User Address',
+            type: 'Home',
+            address1: isColumnValueUndefined(req.body.address1, "string"),
+            address2: isColumnValueUndefined(req.body.address2, "string"),
+            city: isColumnValueUndefined(req.body.city, "string"),
+            state: isColumnValueUndefined(req.body.state, "string"),
+            zipcode: isColumnValueUndefined(req.body.zipcode, "string"),
+        },
+        facility_code: isColumnValueUndefined(req.body.facility_code, "string"),
+    }
     try {
         // let userUpdateRes = await users.query().upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
         // res.send({
@@ -189,39 +190,39 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
         console.log(userObj)
         if (!req.body.UserId) {
             const isUserExits = await users
-              .query()
-              .where('email', req.body.email)
-              .first();
+                .query()
+                .where('email', req.body.email)
+                .first();
             if (!isUserExits) {
-              const response = await users
-                .query()
-                .insertGraphAndFetch(userObj, { relate: true, unrelate: true });
-              res.send({
-                res: response
-              });
+                const response = await users
+                    .query()
+                    .insertGraphAndFetch(userObj, { relate: true, unrelate: true });
+                res.send({
+                    res: response
+                });
             } else {
-              res.send({
-                message: 'This user is already exist!'
-              });
+                res.send({
+                    message: 'This user is already exist!'
+                });
             }
-          } else {
+        } else {
             const isUserExits = await users
-              .query()
-              .where('email', req.body.email)
-              .first();
-            if (isUserExits) {
-              const response = await users
                 .query()
-                .upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
-              res.send({
-                res: response
-              });
+                .where('email', req.body.email)
+                .first();
+            if (isUserExits) {
+                const response = await users
+                    .query()
+                    .upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
+                res.send({
+                    res: response
+                });
             } else {
-              res.send({
-                message: 'User does not exist with the provided UserId'
-              });
+                res.send({
+                    message: 'User does not exist with the provided UserId'
+                });
             }
-          }
+        }
     } catch (error) {
         console.log(`Users: Error while updating user with details : ${JSON.stringify(error, null, 2)}`);
         res.send(
@@ -250,6 +251,7 @@ UsersRoute.post('/', upload, validateToken, async (req, res, next) => {
         dob: isColumnValueUndefined(req.body.dob, "string"),
         about: isColumnValueUndefined(req.body.about, "string"),
         sex: isColumnValueUndefined(req.body.sex, "string"),
+        bownerid: isColumnValueUndefined(req.body.bownerid, "string"),
         location: {
             name: 'User Address',
             type: 'Home',
@@ -295,37 +297,37 @@ UsersRoute.get('/user/by-type', validateToken, async (req, res, next) => {
     try {
         if (userTypeId) {
             const userResponse = await users.query()
-            .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
-            .leftJoin('locations', 'locations.id', 'users.location_id')
-            .where('user_type_id', userTypeId).andWhere('is_deleted', false)
-            .select(
-                'users.about',
-                'users.avatar_uri',
-                'users.bownerid',
-                'users.created_at',
-                'users.dob',
-                'users.email',
-                'users.facility_code',
-                'users.first_name',
-                'users.last_name',
-                'users.id',
-                'users.is_deleted',
-                'users.last_login_date',
-                'locations.address1',
-                'locations.address2',
-                'locations.city',
-                'locations.lat',
-                'locations.long',
-                'locations.state',
-                'locations.zipcode',
-                'users.location_id',
-                'users.phone',
-                'users.salutation',
-                'users.sex',
-                'users.user_type_id',
-                'user_type.type',
-                'users.credentials'
-            );
+                .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
+                .leftJoin('locations', 'locations.id', 'users.location_id')
+                .where('user_type_id', userTypeId).andWhere('is_deleted', false)
+                .select(
+                    'users.about',
+                    'users.avatar_uri',
+                    'users.bownerid',
+                    'users.created_at',
+                    'users.dob',
+                    'users.email',
+                    'users.facility_code',
+                    'users.first_name',
+                    'users.last_name',
+                    'users.id',
+                    'users.is_deleted',
+                    'users.last_login_date',
+                    'locations.address1',
+                    'locations.address2',
+                    'locations.city',
+                    'locations.lat',
+                    'locations.long',
+                    'locations.state',
+                    'locations.zipcode',
+                    'users.location_id',
+                    'users.phone',
+                    'users.salutation',
+                    'users.sex',
+                    'users.user_type_id',
+                    'user_type.type',
+                    'users.credentials'
+                );
             response = userResponse;
         }
         res.send({
@@ -406,6 +408,27 @@ UsersRoute.post('/user/registration', async (req, res, next) => {
         }
     } catch (error) {
         console.log(`Users: Error while user registration with details : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+})
+
+UsersRoute.get('/search/business-owners', validateToken, async (req, res, next) => {
+    let searchParams = req.query.SearchText;
+    try {
+        const businessOwners = await bOwners.query()
+            .where('is_active', true)
+            .andWhere('business_name', 'like', '%' + searchParams + '%')
+            .select(
+                'id',
+                'business_name as title'
+            );
+        res.send(businessOwners);
+    } catch (error) {
         res.send(
             JSON.stringify({
                 message: error.message,
