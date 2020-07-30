@@ -3,6 +3,7 @@ const WorkoutRoute = express.Router();
 const workouts = require('../models/workouts').default;
 const validateToken = require('../middleware').default;
 const users = require('../models/users').default;
+const workoutAssignments = require('../models/workout_assignments').default;
 const UserTypes = require('../enums/user-types').default;
 const multer = require('multer');
 const path = require('path');
@@ -44,6 +45,30 @@ const isColumnValueUndefined = (columnName, dataType) => {
     }
     return _columnValue;
 }
+
+
+WorkoutRoute.get('/by-category', validateToken, async (req, res, next) => {
+    let categoryId = req.query.categoryId;
+    let response = {};
+    try {
+        if (categoryId) {
+            const userResponse = await workouts.query()
+                .where('category_id', categoryId).andWhere('is_active', true);
+            response = userResponse;
+        }
+        res.send({
+            res: response
+        })
+    } catch (error) {
+        console.log(`Users: Error while getting user by types with details : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+})
 
 WorkoutRoute.post('/', validateToken, async (req, res, next) => {
     if (!req.headers.authorization) {
@@ -142,6 +167,52 @@ WorkoutRoute.get('/', validateToken, async (req, res, next) => {
         });
     } catch (error) {
         console.log(`Workouts: Error while getting workout with details : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+});
+
+WorkoutRoute.get('/assigned', validateToken, async (req, res, next) => {
+    try {
+        const w = await workoutAssignments.query();
+        console.log(`Getting workout by id details like ${JSON.stringify(w, null, 2)}`);
+        res.send({
+            res: w
+        });
+    } catch (error) {
+        console.log(`Workouts: Error while getting workout assignments with details : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+});
+
+WorkoutRoute.post('/editAssignment', validateToken, async (req, res, next) => {
+
+    try {
+        console.log(req.body)
+        let obj = {
+            business_owner_id: isColumnValueUndefined(req.body.business_owner_id, 'string'),
+            category_id: isColumnValueUndefined(req.body.category_id, 'string'),
+            url: imagePath,
+            name: isColumnValueUndefined(req.body.name, 'string'),
+            description: isColumnValueUndefined(req.body.description, 'string'),
+        }
+        console.log(`Getting workout params for save with  details like ${JSON.stringify(obj, null, 2)}`);
+        const w = await workoutAssignments.query().insertGraphAndFetch(obj);
+        console.log(`Workout after save is ${JSON.stringify(w, null, 2)}`);
+        res.send({
+            res: w
+        });
+    } catch (error) {
+        console.log(`Workouts: Error while saving workout with details : ${JSON.stringify(error, null, 2)}`);
         res.send(
             JSON.stringify({
                 message: error.message,
