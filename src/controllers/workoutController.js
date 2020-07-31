@@ -178,7 +178,8 @@ WorkoutRoute.get('/', validateToken, async (req, res, next) => {
 
 WorkoutRoute.get('/assigned', validateToken, async (req, res, next) => {
     try {
-        const w = await workoutAssignments.query();
+        let workout_id = req.query.workoutId;
+        const w = await workoutAssignments.query().skipUndefined().where('workout_id', workout_id);
         console.log(`Getting workout by id details like ${JSON.stringify(w, null, 2)}`);
         res.send({
             res: w
@@ -197,22 +198,31 @@ WorkoutRoute.get('/assigned', validateToken, async (req, res, next) => {
 WorkoutRoute.post('/editAssignment', validateToken, async (req, res, next) => {
 
     try {
-        console.log(req.body)
-        let obj = {
-            business_owner_id: isColumnValueUndefined(req.body.business_owner_id, 'string'),
-            category_id: isColumnValueUndefined(req.body.category_id, 'string'),
-            url: imagePath,
-            name: isColumnValueUndefined(req.body.name, 'string'),
-            description: isColumnValueUndefined(req.body.description, 'string'),
-        }
-        console.log(`Getting workout params for save with  details like ${JSON.stringify(obj, null, 2)}`);
-        const w = await workoutAssignments.query().insertGraphAndFetch(obj);
-        console.log(`Workout after save is ${JSON.stringify(w, null, 2)}`);
+        // console.log(req.body)
+        let result = [];
+        req.body.changed.forEach(async u => {
+            let obj = {
+                business_owner_id: isColumnValueUndefined(req.body.business_owner_id, 'string'),
+                user_id: isColumnValueUndefined(u.userId, 'string'),
+                workout_id: isColumnValueUndefined(req.body.workout_id, 'string'),
+            }
+            let w;
+            if(u.assign){
+                const found = await workoutAssignments.query().where('user_id', u.userId).andWhere('workout_id', req.body.workout_id);
+                if(!found.length){
+                    w = await workoutAssignments.query().insertGraphAndFetch(obj);
+                }
+            }
+            else {
+                w = await workoutAssignments.query().delete().where('user_id', u.userId).andWhere('workout_id', req.body.workout_id);
+            }
+            result.push({response: w});
+        })
         res.send({
-            res: w
+            res: result
         });
     } catch (error) {
-        console.log(`Workouts: Error while saving workout with details : ${JSON.stringify(error, null, 2)}`);
+        console.log(`Workouts: Error while updating assignments : ${JSON.stringify(error, null, 2)}`);
         res.send(
             JSON.stringify({
                 message: error.message,
