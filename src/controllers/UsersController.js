@@ -187,35 +187,34 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
         // res.send({
         //     res: userUpdateRes
         // });
-        console.log(userObj)
         if (!req.body.UserId) {
             const isUserExits = await users
                 .query()
                 .where('email', req.body.email)
                 .first();
-            if (!isUserExits) {
-                const response = await users
+                if (!isUserExits) {
+                    const response = await users
                     .query()
                     .insertGraphAndFetch(userObj, { relate: true, unrelate: true });
-                res.send({
-                    res: response
-                });
+                    res.send({
+                        res: response
+                    });
+                } else {
+                    res.send({
+                        message: 'This user is already exist!'
+                    });
+                }
             } else {
-                res.send({
-                    message: 'This user is already exist!'
-                });
-            }
-        } else {
-            const isUserExits = await users
+                const isUserExits = await users
                 .query()
                 .where('email', req.body.email)
                 .first();
-            if (isUserExits) {
-                const response = await users
+                if (isUserExits) {
+                    const response = await users
                     .query()
                     .upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
-                res.send({
-                    res: response
+                    res.send({
+                        res: response
                 });
             } else {
                 res.send({
