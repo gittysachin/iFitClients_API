@@ -24,9 +24,9 @@ CategoriesRoute.get('/', validateToken, async (req, res, next) => {
             .andWhere('users.id', decodedToken.userid).first();
         let c;
         if (u && u.user_type_id === UserTypes.SUPERADMIN) {
-            c = await Category.query().where('is_active', true);
+            c = await Category.query().where('is_active', true).andWhere('type', type);
         } else if (u && u.user_type_id === UserTypes.ADMIN) {
-            c = await Category.query().where('is_active', true);
+            c = await Category.query().where('is_active', true).andWhere('type', type).andWhere('business_owner_id', u.bownerid);
         } else if (u && u.user_type_id === UserTypes.CLIENT) {
             if (type.toLowerCase() === 'workout') {
                 c = await Category.query()

@@ -57,6 +57,7 @@ UsersRoute.get('/', validateToken, async (req, res, next) => {
         const u = await users.query()
             .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
             .leftJoin('locations', 'locations.id', 'users.location_id')
+            .leftJoin('business_owners', 'business_owners.id', 'users.bownerid')
             .where('users.is_deleted', false)
             .andWhere('users.id', '!=', decodedToken.userid)
             .select(
@@ -85,7 +86,8 @@ UsersRoute.get('/', validateToken, async (req, res, next) => {
                 'users.sex',
                 'users.user_type_id',
                 'user_type.type',
-                'users.credentials'
+                'users.credentials',
+                'business_owners.business_name'
             );
         res.send({
             res: u
@@ -106,6 +108,7 @@ UsersRoute.get('/:id', validateToken, async (req, res, next) => {
         const u = await users.query()
             .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
             .leftJoin('locations', 'locations.id', 'users.location_id')
+            .leftJoin('business_owners', 'business_owners.id', 'users.bownerid')
             .where('users.is_deleted', false)
             .andWhere('users.id', req.params.id)
             .select(
@@ -134,7 +137,8 @@ UsersRoute.get('/:id', validateToken, async (req, res, next) => {
                 'users.sex',
                 'users.user_type_id',
                 'user_type.type',
-                'users.credentials'
+                'users.credentials',
+                'business_owners.business_name'
             ).first();
         res.send({
             res: u
@@ -183,45 +187,10 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
         facility_code: isColumnValueUndefined(req.body.facility_code, "string"),
     }
     try {
-        // let userUpdateRes = await users.query().upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
-        // res.send({
-        //     res: userUpdateRes
-        // });
-        if (!req.body.UserId) {
-            const isUserExits = await users
-                .query()
-                .where('email', req.body.email)
-                .first();
-                if (!isUserExits) {
-                    const response = await users
-                    .query()
-                    .insertGraphAndFetch(userObj, { relate: true, unrelate: true });
-                    res.send({
-                        res: response
-                    });
-                } else {
-                    res.send({
-                        message: 'This user is already exist!'
-                    });
-                }
-            } else {
-                const isUserExits = await users
-                .query()
-                .where('email', req.body.email)
-                .first();
-                if (isUserExits) {
-                    const response = await users
-                    .query()
-                    .upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
-                    res.send({
-                        res: response
-                });
-            } else {
-                res.send({
-                    message: 'User does not exist with the provided UserId'
-                });
-            }
-        }
+        let userUpdateRes = await users.query().upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
+        res.send({
+            res: userUpdateRes
+        });    
     } catch (error) {
         console.log(`Users: Error while updating user with details : ${JSON.stringify(error, null, 2)}`);
         res.send(
@@ -423,7 +392,7 @@ UsersRoute.get('/search/business-owners', validateToken, async (req, res, next) 
             .where('is_active', true)
             .andWhere('business_name', 'like', '%' + searchParams + '%')
             .select(
-                'id',
+                'id as bownerid',
                 'business_name as title'
             );
         res.send(businessOwners);
