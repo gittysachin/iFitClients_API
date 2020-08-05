@@ -168,11 +168,14 @@ NutritionRoute.post('/save', upload, validateToken, async (req, res, next) => {
             name: isColumnValueUndefined(req.body.name, 'string'),
             description: isColumnValueUndefined(req.body.description, 'string'),
         }
+        console.log(`Getting nutritions params for save with  details like ${JSON.stringify(obj, null, 2)}`);
         const w = await nutritions.query().insertGraphAndFetch(obj);
+        console.log(`nutritions after save is ${JSON.stringify(w, null, 2)}`);
         res.send({
             res: w
         });
     } catch (error) {
+        console.log(`Nutritions: Error while saving nutritions with details : ${JSON.stringify(error, null, 2)}`);
         res.send(
             JSON.stringify({
                 message: error.message,
