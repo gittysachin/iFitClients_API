@@ -260,14 +260,30 @@ UsersRoute.post('/', upload, validateToken, async (req, res, next) => {
 });
 
 UsersRoute.get('/user/by-type', validateToken, async (req, res, next) => {
+    if (!req.headers.authorization) {
+        next();
+    }
     let userTypeId = req.query.typeId;
     let response = {};
     try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decodedToken = jwt.decode(token);
+        const u = await users.query()
+            .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
+            .where('users.is_deleted', false)
+            .andWhere('users.id', decodedToken.userid)
+            .select(
+                'users.id',
+                'users.bownerid',
+                'users.user_type_id'
+            ).first();
         if (userTypeId) {
             const userResponse = await users.query()
                 .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
                 .leftJoin('locations', 'locations.id', 'users.location_id')
-                .where('user_type_id', userTypeId).andWhere('is_deleted', false)
+                .where('users.user_type_id', userTypeId)
+                .andWhere('users.is_deleted', false)
+                .andWhere('users.bownerid', u.bownerid)
                 .select(
                     'users.about',
                     'users.avatar_uri',
