@@ -3,6 +3,7 @@ const NutritionRoute = express.Router();
 const nutritions = require('../models/nutritions').default;
 const validateToken = require('../middleware').default;
 const users = require('../models/users').default;
+const NutritionAssignments = require('../models/nutrition_assignments').default;
 const UserTypes = require('../enums/user-types').default;
 const multer = require('multer');
 const path = require('path');
@@ -184,6 +185,61 @@ NutritionRoute.post('/save', upload, validateToken, async (req, res, next) => {
     }
 });
 
+NutritionRoute.get('/assigned/:id', validateToken, async (req, res, next) => {
+    try {
+        let nutrition_id = req.params.id;
+        const w = await NutritionAssignments.query().skipUndefined().where('nutrition_id', nutrition_id);
+        console.log(`Getting workout by id details like ${JSON.stringify(w, null, 2)}`);
+        res.send({
+            res: w
+        });
+    } catch (error) {
+        console.log(`Workouts: Error while getting workout assignments with details : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+});
+
+NutritionRoute.post('/editAssignment', validateToken, async (req, res, next) => {
+
+    try {
+        // console.log(req.body)
+        let result = [];
+        req.body.changed.forEach(async u => {
+            let obj = {
+                business_owner_id: isColumnValueUndefined(req.body.business_owner_id, 'string'),
+                user_id: isColumnValueUndefined(u.userId, 'string'),
+                nutrition_id: isColumnValueUndefined(req.body.nutrition_id, 'string'),
+            }
+            let w;
+            if(u.assign){
+                const found = await NutritionAssignments.query().where('user_id', u.userId).andWhere('nutrition_id', req.body.nutrition_id);
+                if(!found.length){
+                    w = await NutritionAssignments.query().insertGraphAndFetch(obj);
+                }
+            }
+            else {
+                w = await NutritionAssignments.query().delete().where('user_id', u.userId).andWhere('nutrition_id', req.body.nutrition_id);
+            }
+            result.push({response: w});
+        })
+        res.send({
+            res: result
+        });
+    } catch (error) {
+        console.log(`Workouts: Error while updating assignments : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+});
 
 NutritionRoute.put('/', upload, validateToken, async (req, res, next) => {
     let imagePath = "";
