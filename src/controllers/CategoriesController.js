@@ -98,6 +98,7 @@ CategoriesRoute.put('/', validateToken, async (req, res, next) => {
             id: req.body.id,
             name: req.body.name,
             type: req.body.type,
+            is_active: req.body.is_active,
             business_owner_id: req.body.business_owner_id
         }
         const c = await Category.query().upsertGraphAndFetch(obj, { relate: true, unrelate: true });
