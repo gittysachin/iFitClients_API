@@ -103,6 +103,7 @@ WorkoutRoute.post('/', validateToken, async (req, res, next) => {
         } else if (u && u.user_type_id === UserTypes.ADMIN) {
             w = await workouts.query()
                 .where('business_owner_id', u.bownerid)
+                .andWhere('category_id', requestParams.category_id)
                 .andWhere('is_active', true)
                 .orderBy('created_at', 'desc')
                 .page(requestParams.pageNo - 1, requestParams.pageSize);
