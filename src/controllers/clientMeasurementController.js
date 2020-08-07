@@ -22,7 +22,24 @@ clientMeasurementRoute.get('/', validateToken, async (req, res, next) => {
             })
         );
     }
-})
+});
+
+clientMeasurementRoute.post('/', validateToken, async (req, res, next) => {
+    try {
+        const cm = await measurements.query().where('is_deleted', false).andWhere('user_id', req.body.id).eager('[user]');
+        res.send({
+            res: cm
+        });
+    } catch (error) {
+        console.log(`Client Measurement: Error while getting all measurements of client with details : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+});
 
 clientMeasurementRoute.get('/:id', validateToken, async (req, res, next) => {
     try {
