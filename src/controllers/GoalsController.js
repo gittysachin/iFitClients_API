@@ -165,6 +165,23 @@ GoalsRoute.post('/', validateToken, async (req, res, next) => {
     }
 });
 
+GoalsRoute.post('/getGoals', validateToken, async (req, res, next) => {
+    try {
+        const cm = await Goals.query().where('is_active', true).andWhere('user_id', req.body.id);
+        res.send({
+            res: cm
+        });
+    } catch (error) {
+        console.log(`Goals: Error while getting all goals of client with details : ${JSON.stringify(error, null, 2)}`);
+        res.send(
+            JSON.stringify({
+                message: error.message,
+                stack: error.stack
+            })
+        );
+    }
+});
+
 GoalsRoute.get('/getall/goal-types', validateToken, async (req, res, next) => {
     try {
         const gt = await GoalTypes.query();
