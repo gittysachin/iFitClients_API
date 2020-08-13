@@ -2,6 +2,7 @@ const express = require('express');
 const AuthRoute = express.Router();
 let jwt = require('jsonwebtoken');
 const users = require('../models/users').default;
+const businessOwners = require('../models/business_owners').default;
 
 AuthRoute.use(async (req, res, next) => {
     next();
@@ -22,6 +23,8 @@ AuthRoute.post('/login', async (req, res, next) => {
             );
             u.last_login_date = new Date();
             let us = await users.query().upsertGraphAndFetch(u, { relate: true, unrelate: true });
+            let businessOwner = await businessOwners.query().where('id', us.bownerid).first();
+            us.businessOwner = businessOwner;
             response.success = true;
             response.message = 'Authentication successful!';
             response.token = token;
