@@ -4,6 +4,8 @@ const users = require('../models/users').default;
 const bOwners = require('../models/business_owners').default;
 const userTypes = require('../models/user_type').default;
 const validateToken = require('../middleware').default;
+const measurement = require('../models/client_measurements').default;
+const UserTypes = require('../enums/user-types').default;
 const multer = require('multer');
 const path = require('path');
 const storage = multer.diskStorage({
@@ -190,7 +192,7 @@ UsersRoute.put('/', upload, validateToken, async (req, res, next) => {
         let userUpdateRes = await users.query().upsertGraphAndFetch(userObj, { relate: true, unrelate: true });
         res.send({
             res: userUpdateRes
-        });    
+        });
     } catch (error) {
         console.log(`Users: Error while updating user with details : ${JSON.stringify(error, null, 2)}`);
         res.send(
@@ -278,40 +280,45 @@ UsersRoute.get('/user/by-type', validateToken, async (req, res, next) => {
                 'users.user_type_id'
             ).first();
         if (userTypeId) {
-            const userResponse = await users.query()
-                .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
-                .leftJoin('locations', 'locations.id', 'users.location_id')
-                .where('users.user_type_id', userTypeId)
-                .andWhere('users.is_deleted', false)
-                .andWhere('users.bownerid', u.bownerid)
-                .select(
-                    'users.about',
-                    'users.avatar_uri',
-                    'users.bownerid',
-                    'users.created_at',
-                    'users.dob',
-                    'users.email',
-                    'users.facility_code',
-                    'users.first_name',
-                    'users.last_name',
-                    'users.id',
-                    'users.is_deleted',
-                    'users.last_login_date',
-                    'locations.address1',
-                    'locations.address2',
-                    'locations.city',
-                    'locations.lat',
-                    'locations.long',
-                    'locations.state',
-                    'locations.zipcode',
-                    'users.location_id',
-                    'users.phone',
-                    'users.salutation',
-                    'users.sex',
-                    'users.user_type_id',
-                    'user_type.type',
-                    'users.credentials'
-                );
+            let userResponse;
+            if (userTypeId === UserTypes.CLIENT) {
+                userResponse = await calculateClientStatistics();
+            } else {
+                userResponse = await users.query()
+                    .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
+                    .leftJoin('locations', 'locations.id', 'users.location_id')
+                    .where('users.user_type_id', userTypeId)
+                    .andWhere('users.is_deleted', false)
+                    .andWhere('users.bownerid', u.bownerid)
+                    .select(
+                        'users.about',
+                        'users.avatar_uri',
+                        'users.bownerid',
+                        'users.created_at',
+                        'users.dob',
+                        'users.email',
+                        'users.facility_code',
+                        'users.first_name',
+                        'users.last_name',
+                        'users.id',
+                        'users.is_deleted',
+                        'users.last_login_date',
+                        'locations.address1',
+                        'locations.address2',
+                        'locations.city',
+                        'locations.lat',
+                        'locations.long',
+                        'locations.state',
+                        'locations.zipcode',
+                        'users.location_id',
+                        'users.phone',
+                        'users.salutation',
+                        'users.sex',
+                        'users.user_type_id',
+                        'user_type.type',
+                        'users.credentials'
+                    );
+            }
             response = userResponse;
         }
         res.send({
@@ -421,5 +428,114 @@ UsersRoute.get('/search/business-owners', validateToken, async (req, res, next) 
         );
     }
 })
+
+async function calculateClientStatistics() {    
+    let clientResponse = [];
+    const clients = await users.query()
+        .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
+        .leftJoin('locations', 'locations.id', 'users.location_id')
+        .where('users.user_type_id', userTypeId)
+        .andWhere('users.is_deleted', false)
+        .andWhere('users.bownerid', u.bownerid)
+        .select(
+            'users.about',
+            'users.avatar_uri',
+            'users.bownerid',
+            'users.created_at',
+            'users.dob',
+            'users.email',
+            'users.facility_code',
+            'users.first_name',
+            'users.last_name',
+            'users.id',
+            'users.is_deleted',
+            'users.last_login_date',
+            'locations.address1',
+            'locations.address2',
+            'locations.city',
+            'locations.lat',
+            'locations.long',
+            'locations.state',
+            'locations.zipcode',
+            'users.location_id',
+            'users.phone',
+            'users.salutation',
+            'users.sex',
+            'users.user_type_id',
+            'user_type.type',
+            'users.credentials'
+        ).orderBy('created_at', 'ASC');
+    if (clients && clients.length > 0) {
+        for (let i = 0; i < clients.length; i++) {
+            let clientJson = {};
+            let clientMeasurement = await getMeasurements(clients[i].id);
+            clientJson.about = clients[i].about;
+            clientJson.avatar_uri = clients[i].avatar_uri;
+            clientJson.bownerid = clients[i].bownerid;
+            clientJson.created_at = clients[i].created_at;
+            clientJson.dob = clients[i].dob;
+            clientJson.email = clients[i].email;
+            clientJson.facility_code = clients[i].facility_code;
+            clientJson.first_name = clients[i].first_name;
+            clientJson.last_name = clients[i].last_name;
+            clientJson.id = clients[i].id;
+            clientJson.is_deleted = clients[i].is_deleted;
+            clientJson.last_login_date = clients[i].last_login_date;
+            clientJson.address1 = clients[i].address1;
+            clientJson.address = clients[i].address2;
+            clientJson.city = clients[i].city;
+            clientJson.lat = clients[i].lat;
+            clientJson.long = clients[i].long;
+            clientJson.state = clients[i].state;
+            clientJson.zipcode = clients[i].zipcode;
+            clientJson.location_id = clients[i].location_id;
+            clientJson.phone = clients[i].phone;
+            clientJson.salutation = clients[i].salutation;
+            clientJson.sex = clients[i].sex;
+            clientJson.user_type_id = clients[i].user_type_id;
+            clientJson.type = clients[i].type;
+            clientJson.credentials = clients[i].credentials;
+            clientJson.weight = clientMeasurement.weight;
+            clientJson.height = clientMeasurement.height;
+            clientJson.body_fat_percentage = clientMeasurement.body_fat_percentage;
+            clientJson.waist = clientMeasurement.waist;
+            clientJson.hips = clientMeasurement.hips;
+            clientJson.thighs = clientMeasurement.thighs;
+            clientJson.chest = clientMeasurement.chest;
+            clientJson.neck = clientMeasurement.neck;
+            clientJson.upper_arms = clientMeasurement.upper_arms;
+            clientJson.fore_arms = clientMeasurement.fore_arms;
+            clientJson.calves = clientMeasurement.calves;
+            clientResponse.push(clientJson);
+        }
+    }
+    return clientResponse;
+}
+
+async function getMeasurements(clientId) {
+    let _diff = {};
+    let _diffJson = {};
+    try {
+        const clientMeasurement = await measurement.query().where('id', clientId).orderBy('created_at', 'ASC');
+        if (clientMeasurement.length > 0) {
+            _diff.initialStage = clientMeasurement[0];
+            _diff.latestStage = clientMeasurement[(clientMeasurement.length) - 1];
+        }
+        _diffJson.weight = _diff.initialStage.weight - _diff.latestStage.weight;
+        _diffJson.height = _diff.initialStage.height - _diff.latestStage.height;
+        _diffJson.body_fat_percentage = _diff.initialStage.body_fat_percentage - _diff.latestStage.body_fat_percentage;
+        _diffJson.waist = _diff.initialStage.waist - _diff.latestStage.waist;
+        _diffJson.hips = _diff.initialStage.hips - _diff.latestStage.hips;
+        _diffJson.thighs = _diff.initialStage.thighs - _diff.latestStage.thighs;
+        _diffJson.chest = _diff.initialStage.chest - _diff.latestStage.chest;
+        _diffJson.neck = _diff.initialStage.neck - _diff.latestStage.neck;
+        _diffJson.upper_arms = _diff.initialStage.upper_arms - _diff.latestStage.upper_arms;
+        _diffJson.fore_arms = _diff.initialStage.fore_arms - _diff.latestStage.fore_arms;
+        _diffJson.calves = _diff.initialStage.calves - _diff.latestStage.calves;
+        return _diffJson;
+    } catch (error) {
+        console.log(error);
+    }
+}
 
 export default UsersRoute;
