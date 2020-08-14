@@ -282,7 +282,7 @@ UsersRoute.get('/user/by-type', validateToken, async (req, res, next) => {
         if (userTypeId) {
             let userResponse;
             if (userTypeId === UserTypes.CLIENT) {
-                userResponse = await calculateClientStatistics();
+                userResponse = await calculateClientStatistics(u, userTypeId);
             } else {
                 userResponse = await users.query()
                     .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
@@ -429,7 +429,7 @@ UsersRoute.get('/search/business-owners', validateToken, async (req, res, next) 
     }
 })
 
-async function calculateClientStatistics() {    
+async function calculateClientStatistics(u, userTypeId) {    
     let clientResponse = [];
     const clients = await users.query()
         .leftJoin('user_type', 'user_type.id', 'users.user_type_id')
@@ -495,17 +495,32 @@ async function calculateClientStatistics() {
             clientJson.user_type_id = clients[i].user_type_id;
             clientJson.type = clients[i].type;
             clientJson.credentials = clients[i].credentials;
-            clientJson.weight = clientMeasurement.weight;
-            clientJson.height = clientMeasurement.height;
-            clientJson.body_fat_percentage = clientMeasurement.body_fat_percentage;
-            clientJson.waist = clientMeasurement.waist;
-            clientJson.hips = clientMeasurement.hips;
-            clientJson.thighs = clientMeasurement.thighs;
-            clientJson.chest = clientMeasurement.chest;
-            clientJson.neck = clientMeasurement.neck;
-            clientJson.upper_arms = clientMeasurement.upper_arms;
-            clientJson.fore_arms = clientMeasurement.fore_arms;
-            clientJson.calves = clientMeasurement.calves;
+            if(clientMeasurement) {
+                clientJson.weight = clientMeasurement.weight;
+                clientJson.height = clientMeasurement.height;
+                clientJson.body_fat_percentage = clientMeasurement.body_fat_percentage;
+                clientJson.waist = clientMeasurement.waist;
+                clientJson.hips = clientMeasurement.hips;
+                clientJson.thighs = clientMeasurement.thighs;
+                clientJson.chest = clientMeasurement.chest;
+                clientJson.neck = clientMeasurement.neck;
+                clientJson.upper_arms = clientMeasurement.upper_arms;
+                clientJson.fore_arms = clientMeasurement.fore_arms;
+                clientJson.calves = clientMeasurement.calves;
+            } else {
+                clientJson.weight = 0;
+                clientJson.height = 0;
+                clientJson.body_fat_percentage = 0;
+                clientJson.waist = 0;
+                clientJson.hips = 0;
+                clientJson.thighs = 0;
+                clientJson.chest = 0;
+                clientJson.neck = 0;
+                clientJson.upper_arms = 0;
+                clientJson.fore_arms = 0;
+                clientJson.calves = 0;
+            }
+            
             clientResponse.push(clientJson);
         }
     }
@@ -516,7 +531,7 @@ async function getMeasurements(clientId) {
     let _diff = {};
     let _diffJson = {};
     try {
-        const clientMeasurement = await measurement.query().where('id', clientId).orderBy('created_at', 'ASC');
+        const clientMeasurement = await measurement.query().where('user_id', clientId).orderBy('created_at', 'ASC');
         if (clientMeasurement.length > 0) {
             _diff.initialStage = clientMeasurement[0];
             _diff.latestStage = clientMeasurement[(clientMeasurement.length) - 1];
