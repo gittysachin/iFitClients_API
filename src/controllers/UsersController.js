@@ -5,6 +5,7 @@ const bOwners = require('../models/business_owners').default;
 const userTypes = require('../models/user_type').default;
 const validateToken = require('../middleware').default;
 const measurement = require('../models/client_measurements').default;
+const snapshots = require('../models/snapshots').default;
 const UserTypes = require('../enums/user-types').default;
 const multer = require('multer');
 const path = require('path');
@@ -469,6 +470,7 @@ async function calculateClientStatistics(u, userTypeId) {
         for (let i = 0; i < clients.length; i++) {
             let clientJson = {};
             let clientMeasurement = await getMeasurements(clients[i].id);
+            let clientSnapshots = await getSnapshots(clients[i].id);
             clientJson.about = clients[i].about;
             clientJson.avatar_uri = clients[i].avatar_uri;
             clientJson.bownerid = clients[i].bownerid;
@@ -496,8 +498,13 @@ async function calculateClientStatistics(u, userTypeId) {
             clientJson.type = clients[i].type;
             clientJson.credentials = clients[i].credentials;
             if(clientMeasurement) {
+                clientJson.last_weighin_date = clientMeasurement.last_weighin_date;
+                clientJson.startingWeight = clientMeasurement.startingWeight;
+                clientJson.currentWeight = clientMeasurement.currentWeight;
                 clientJson.weight = clientMeasurement.weight;
                 clientJson.height = clientMeasurement.height;
+                clientJson.startingBodyFat = clientMeasurement.startingBodyFat;
+                clientJson.currentBodyFat = clientMeasurement.currentBodyFat;
                 clientJson.body_fat_percentage = clientMeasurement.body_fat_percentage;
                 clientJson.waist = clientMeasurement.waist;
                 clientJson.hips = clientMeasurement.hips;
@@ -520,11 +527,30 @@ async function calculateClientStatistics(u, userTypeId) {
                 clientJson.fore_arms = 0;
                 clientJson.calves = 0;
             }
+            if(clientSnapshots) {
+                clientJson.last_picture_date = clientSnapshots.last_picture_date;
+            }
             
             clientResponse.push(clientJson);
         }
     }
     return clientResponse;
+}
+
+async function getSnapshots(clientId) {
+    let _diff = {};
+    let _diffJson = {};
+    try {
+        const clientSnapshots = await snapshots.query().where('user_id', clientId).orderBy('created_at', 'ASC');
+        if(clientSnapshots.length > 0) {
+            _diff.initialStage = clientSnapshots[0];
+            _diff.latestStage = clientSnapshots[(clientSnapshots.length) - 1];
+        }
+        _diffJson.last_picture_date = _diff.latestStage.snapshot_date;
+        return _diffJson;
+    } catch(error) {
+        console.log(error);
+    }
 }
 
 async function getMeasurements(clientId) {
@@ -536,8 +562,13 @@ async function getMeasurements(clientId) {
             _diff.initialStage = clientMeasurement[0];
             _diff.latestStage = clientMeasurement[(clientMeasurement.length) - 1];
         }
+        _diffJson.last_weighin_date = _diff.latestStage.measurement_date;
+        _diffJson.startingWeight = _diff.initialStage.weight;
+        _diffJson.currentWeight = _diff.latestStage.weight;
         _diffJson.weight = _diff.initialStage.weight - _diff.latestStage.weight;
         _diffJson.height = _diff.initialStage.height - _diff.latestStage.height;
+        _diffJson.startingBodyFat = _diff.initialStage.body_fat_percentage;
+        _diffJson.currentBodyFat = _diff.latestStage.body_fat_percentage;
         _diffJson.body_fat_percentage = _diff.initialStage.body_fat_percentage - _diff.latestStage.body_fat_percentage;
         _diffJson.waist = _diff.initialStage.waist - _diff.latestStage.waist;
         _diffJson.hips = _diff.initialStage.hips - _diff.latestStage.hips;
